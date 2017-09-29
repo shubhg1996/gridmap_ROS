@@ -12,6 +12,7 @@ int main(int argc, char** argv)
   // Initialize node and publisher.
   ros::init(argc, argv, "grid_map_worker");
   ros::NodeHandle nh("~");
+  imageSubscriber_ = nodeHandle_.subscribe("/image", 1, &imageCallback, this);
   ros::Publisher publisher = nh.advertise<grid_map_msgs::GridMap>("grid_map", 1, true);
 
   // Create grid map.
