@@ -45,20 +45,31 @@ void ImageToGridmapDemo::imageCallback(const sensor_msgs::Image& msg)
 {
   // image submap (iterators).
   //update x, y, theta from camera pose
-  grid_map::Polygon polygon;
-  polygon.setFrameId(map_.getFrameId());
-  polygon.addVertex(Position( x+0.1*std::cos(theta),  y+0.1*std::sin(theta)));
-  polygon.addVertex(Position( x+0.1*(std::cos(theta)-std::sin(theta)),  y+0.1*(std::cos(theta)+std::sin(theta))));
-  polygon.addVertex(Position( x-0.1*std::sin(theta),  y+0.1*std::cos(theta)));
-  polygon.addVertex(Position( x,  y));
-
-  for (grid_map::PolygonIterator it(map_, polygon); !it.isPastEnd(); ++it) {
+  Position topLeftCorner(x-0.1*(std::cos(theta)+std::sin(theta)), y+0.1*(std::cos(theta)-std::sin(theta)));
+  Position topRightCorner(x+0.1*(std::cos(theta)-std::sin(theta)), y+0.1*(std::cos(theta)+std::sin(theta)));
+  Position center(x, y);
+  Index startIndex,stopIndex,centerIndex,currentIndex;
+  map.getIndex(topLeftCorner, startIndex);
+  map.getIndex(topRightCorner, stopIndex);
+  map.getIndex(center, centerIndex);
+  for (grid_map::LineIterator it(map, startIndex, stopIndex); !it.isPastEnd(); ++it) {
     Position currentPosition;
     map.getPosition(*it, currentPosition);
-    float objectness = 0;
-    //convert to camera pixels and extract region
-    //calculate objectness measure 
-    map.at("occmap", *it) = objectness;
+    map.getIndex(currentPosition, currentIndex);
+    for (grid_map::LineIterator it2(map, centerIndex, currentIndex); !it2.isPastEnd(); ++it2) {
+      curobj = map.at("occmap", *it2);
+      if (curobj == -1) {
+        //convert to camera pixels and extract region
+        //calculate objectness measure
+        //mark if lane
+        if (curobj == 1) 
+          map.at("occmap", *it2) = curobj;
+      }
+      //if ground not found
+      if (curobj != 0) {
+        break;
+      }
+    }
   }
   
 }
