@@ -6,6 +6,7 @@
 #include <limits>
 
 using namespace grid_map;
+float cammat[3][3] = {{1.0, 0.0, 1.0},{0.0, 1.0, 1.0},{0.0, 0.0, 1.0}}; 
 
 int main(int argc, char** argv)
 {
@@ -40,6 +41,26 @@ int main(int argc, char** argv)
   return 0;
 }
 
+//cluster output
+int cluster(cv::Mat roi) {
+  return out;
+}
+
+//project imagepoint and objectness calculation
+int findObj(Position imgpos, std::vector<Point3f> tvec, std::vector<Point3f> rvec, cv::Mat img) {
+  std::vector<Point3f> imgpt;
+  std::vector<Point2f> imgout;
+  imgpt.push_back(Point3f(imgpos.x(),imgpos.y(),0.0));
+  //project points on image and extract ROI
+  cv::projectPoints(imgpt,rvec,tvec,cammat,NULL,imgout);
+  cv::Rect region_of_interest = Rect(imgout[0].x-5, imgout[0].y-5, 10, 10);
+  cv::Mat image_roi = img(region_of_interest);
+  //get cluster class
+  out = cluster(image_roi);
+  return out;
+}
+
+
 //Image callback for gridmacp generation
 void ImageToGridmapDemo::imageCallback(const sensor_msgs::Image& msg)
 {
@@ -59,8 +80,11 @@ void ImageToGridmapDemo::imageCallback(const sensor_msgs::Image& msg)
     for (grid_map::LineIterator it2(map, centerIndex, currentIndex); !it2.isPastEnd(); ++it2) {
       curobj = map.at("occmap", *it2);
       if (curobj == -1) {
+        Position imgpt;
+        map.getPosition(*it2, imgpt);
         //convert to camera pixels and extract region
         //calculate objectness measure
+        curobj = findObj(imgpt);
         //mark if lane
         if (curobj == 1) 
           map.at("occmap", *it2) = curobj;
