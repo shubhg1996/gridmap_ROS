@@ -1,0 +1,4 @@
+sensor_msgs/Image roi
+---
+int64 class
+float16 prob
